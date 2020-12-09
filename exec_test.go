@@ -43,14 +43,13 @@ func TestExecutionContext(t *testing.T) {
 	}()
 
 	select {
-	case err := <- errChan:
+	case err := <-errChan:
 		t.Fatal("ended with error:", err)
-	case res := <- resChan:
+	case res := <-resChan:
 		if !verify(res.([]byte)) {
 			t.Fatal("should end only once verified")
 		}
-		str := fmt.Sprintf("%x", res)
-		if strings.Index(str, leadingZeros) != 0 {
+		if strings.Index(fmt.Sprintf("%x", res), leadingZeros) != 0 {
 			t.Fatal("should have a minimum of leading zeros")
 		}
 	}
@@ -61,7 +60,8 @@ func TestExecutionContext_ExecError(t *testing.T) {
 		return true
 	}
 	exec := func(i int, ec ExecutionContext) error {
-		for i := 0; i < 10000000; i++ {}
+		for i := 0; i < 10000000; i++ {
+		}
 		return errors.New("dummy error")
 	}
 
@@ -72,11 +72,11 @@ func TestExecutionContext_ExecError(t *testing.T) {
 	}()
 
 	select {
-	case err := <- errChan:
+	case err := <-errChan:
 		if err == nil {
 			t.Fatal("should end with some error")
 		}
-	case <- resChan:
+	case <-resChan:
 		t.Fatal("should have ended with error")
 	}
 }

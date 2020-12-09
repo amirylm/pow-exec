@@ -4,16 +4,24 @@ import (
 	"sync"
 )
 
-type Executor = func(int, ExecutionContext) error
+// Execute is taking care of the actual execution
+type Execute = func(int, ExecutionContext) error
 
+// Verify checks the result of the execution
 type Verify = func(interface{}) bool
 
+// ExecutionContext is an interface for managing the flow from multiple go-routines
 type ExecutionContext interface {
+	// End is called when an executor is finished
+	// will verify the output data
+	// won't end execution unless the output is verified
 	End(data interface{})
+	// Ended is a function that checks whether the execution is done
 	Ended() bool
 }
 
-func Run(exec Executor, verify Verify, n int) (chan interface{}, chan error) {
+// Run executes some task, with the given exec and verify, using n go-routines
+func Run(exec Execute, verify Verify, n int) (chan interface{}, chan error) {
 	r := newExecutionContext(verify)
 	for i := 0; i < n; i++ {
 		go func(i int) {
@@ -29,8 +37,9 @@ func Run(exec Executor, verify Verify, n int) (chan interface{}, chan error) {
 	return r.out, r.err
 }
 
+// executionContext is an implementation of ExecutionContext
 type executionContext struct {
-	m      *sync.Mutex
+	m       *sync.Mutex
 	stopped bool
 
 	verify Verify
@@ -41,7 +50,7 @@ type executionContext struct {
 
 func newExecutionContext(verify Verify) *executionContext {
 	var m sync.Mutex
-	sm := executionContext{&m, false, verify, make(chan interface{}, 1),make(chan error, 1)}
+	sm := executionContext{&m, false, verify, make(chan interface{}, 1), make(chan error, 1)}
 	return &sm
 }
 
